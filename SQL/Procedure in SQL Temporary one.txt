@@ -1,0 +1,67 @@
+File name should be DML_tablename_jiranumber.SQL
+SET SERVEROUTPUT ON;
+DECLARE
+if you want to check the db name 
+ vl_dbname VARCHAR2(256) := 'DEFAULT';
+ 
+  c_REALT_db CONSTANT VARCHAR2(24) := 'REALT';
+  c_REALTIME_envNamedb CONSTANT VARCHAR2(24) := 'REALTIME'
+  entry_count NUMBER;
+  
+  variableName  BLOB;---for blob type
+ 
+ entry_count NUMBER;
+ 
+ 
+ PROCEDURE FIND_PROPERTY_NAME(descriptionValue IN VARCHAR2,serviceName IN VARCHAR2,serviceMethod IN VARCHAR2) IS
+      BEGIN
+       dbms_output.put_line(' Searching row entry for scenario=' ||descriptionValue);
+       entry_count:=0;
+       SELECT COUNT(*) INTO entry_count FROM table_name where col=value;
+	   
+      END FIND_PROPERTY_NAME;
+      
+      
+ PROCEDURE UPDATE_BLOB(descriptionValue IN VARCHAR2,responseValues IN BLOB,serviceName IN VARCHAR2,serviceMethod IN VARCHAR2) IS
+     BEGIN
+		FIND_PROPERTY_NAME(descriptionValue,serviceName,serviceMethod);	
+		IF entry_count = 1 THEN
+		    dbms_output.put_line('   entry_count = ' || entry_count || ', updating row');		   
+			UPDATE table_name pmr
+			SET col=value
+			WHERE col=value;
+
+		ELSE
+			  dbms_output.put_line('   entry_count = ' || entry_count || ', skipping update');
+		END IF;
+    END UPDATE_BLOB;
+   
+ BEGIN
+
+-- Fetch the database name as a first step to handle the environment specific execution
+    SELECT name INTO vl_dbname FROM v$database; remove if not needed
+    --Add the blob   UTL_RAW.CAST_TO_RAW will convert it to text
+    variableName:=UTL_RAW.CAST_TO_RAW('{
+	"functionalTranStatus" : "P",
+	"pdfImagePath" : "/mnt/edi_share/EDI/artifacts/mock_service/Consolidate_PatientEqualsGuarantor.pdf"
+}
+');
+
+IF vl_dbname = c_REALT_db OR  vl_dbname = c_REALTIME_envNamedb  THEN
+       UPDATE_BLOB('val1',variableName,'val2S','val3');
+ELSE
+         DBMS_OUTPUT.PUT_LINE ('Neither of the  database is picked up. ' ||  vl_dbname);
+END IF;
+
+-- If it is not able to fetch the database name, it will throw an error which DBA or whoever is executing this can see
+    EXCEPTION
+			WHEN NO_DATA_FOUND THEN
+				RAISE_APPLICATION_ERROR(-20002, 'Could not fetch database name, Script Failed');
+
+
+END;
+/
+
+    
+    
+    
